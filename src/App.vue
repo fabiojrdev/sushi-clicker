@@ -10,6 +10,15 @@ interface Skill {
   intervalId: number // ID do intervalo para controle (opcional)
 }
 
+interface Items {
+  name: string // Nome do items
+  durability: number // Durabilidade do item
+  value: number // Valor de dano que o item dá
+  cost: number // Custo do item
+  status: boolean // Status se o item está ativo ou não
+  intervalId: number // ID do intervalo para controle (opcional)
+}
+
 interface CountUpMessage {
   skillName: string
   value: number
@@ -23,6 +32,7 @@ export default defineComponent({
       menuGlobal: false,
       menuConfig: false,
       menuMagias: false,
+      menuItems: false,
       menuResetData: false,
       countTotal: 0,
       countTotalSaved: '',
@@ -36,7 +46,46 @@ export default defineComponent({
       resetMax: 1000,
       resetModal: false,
       sushiReset: 10,
+      purchasedItems: [] as string[],
       purchasedSkills: [] as string[],
+      items: [
+        { name: 'Faquinha', durability: 1, value: 50, cost: 1000, status: false, intervalId: 200 },
+        { name: 'Garfo', durability: 1, value: 100, cost: 10000, status: false, intervalId: 201 },
+        { name: 'Colher', durability: 1, value: 150, cost: 50000, status: false, intervalId: 202 },
+        {
+          name: 'Oculos de Sol',
+          durability: 1,
+          value: 200,
+          cost: 100000,
+          status: false,
+          intervalId: 203
+        },
+        {
+          name: 'Camisa Oaklyu',
+          durability: 1,
+          value: 250,
+          cost: 200000,
+          status: false,
+          intervalId: 204
+        },
+        {
+          name: 'Juliete',
+          durability: 1,
+          value: 300,
+          cost: 300000,
+          status: false,
+          intervalId: 205
+        },
+        { name: 'Senna', durability: 1, value: 350, cost: 400000, status: false, intervalId: 206 },
+        {
+          name: 'Creatina',
+          durability: 1,
+          value: 400,
+          cost: 500000,
+          status: false,
+          intervalId: 207
+        }
+      ] as Items[],
       skills: [
         { name: 'Hashi', interval: 1, value: 1, cost: 50, status: false, intervalId: 1 },
         { name: 'Shoyu', interval: 1, value: 10, cost: 150, status: false, intervalId: 2 },
@@ -45,7 +94,8 @@ export default defineComponent({
         { name: 'Temaki', interval: 1, value: 1000, cost: 100000, status: false, intervalId: 5 },
         { name: 'Shimeji', interval: 1, value: 2000, cost: 500000, status: false, intervalId: 6 }
       ] as Skill[],
-      countUpMessages: [] as { skillName: string; value: number; id: number }[]
+      countUpMessages: [] as { skillName: string; value: number; id: number }[],
+      countUpItemMessages: [] as { itemsName: string; value: number; id: number }[]
     }
   },
 
@@ -82,6 +132,41 @@ export default defineComponent({
       await new Promise((resolve) => setTimeout(resolve, 200))
       this.isScaled = false
       await this.countUp(true, 'click')
+    },
+
+    handleItems(items: Items) {
+      if (!this.purchasedItems.includes(items.name)) {
+        if (this.countTotal >= items.cost) {
+          this.countTotal -= items.cost
+          this.purchasedItems.push(items.name)
+        } else {
+          alert(
+            `Você precisa de mais ${items.cost - this.countTotal} sushi(s) para adquirir ${items.name}!`
+          )
+        }
+      } else {
+        this.toggleItem(items)
+      }
+    },
+
+    toggleItem(items: Items) {
+      if (items.status) {
+        items.status = false
+      } else {
+        this.activateItems(items)
+      }
+    },
+
+    activateItems(items: Items) {
+      items.intervalId = window.setInterval(() => {
+        this.countTotal += items.value
+        this.countUpItemMessages.push({
+          itemsName: items.name,
+          value: items.value,
+          id: items.intervalId
+        })
+      }, 1000)
+      items.status = true
     },
 
     handleSkill(skill: Skill) {
@@ -192,6 +277,9 @@ export default defineComponent({
       <button class="button-menu-secundary" @click="(menuMagias = true), (menuGlobal = false)">
         Magias
       </button>
+      <button class="button-menu-secundary" @click="(menuItems = true), (menuGlobal = false)">
+        Items
+      </button>
     </div>
   </div>
 
@@ -243,6 +331,35 @@ export default defineComponent({
         </button>
       </div>
       <button class="button-menu-secundary" @click="(menuMagias = false), (menuGlobal = true)">
+        Voltar
+      </button>
+    </div>
+  </div>
+
+  <div v-if="menuItems" class="container-modal">
+    <div class="menu-modal">
+      <div class="title">Items</div>
+      <span class="close-button-menu" @click="menuItems = false">X</span>
+      <div class="magias">
+        <button
+          v-for="item in items"
+          :key="item.name"
+          :class="{ 'active-skill': item.status, 'desactive-skill': !item.status }"
+          class="skill-container"
+          @click="startGame ? handleItems(item) : null"
+        >
+          <p class="title-skill">{{ item.name }}<br />(+{{ item.value }})</p>
+          <img
+            :src="`@/assets/${item.name.toLowerCase()}.png`"
+            class="skill-button-active"
+            alt=""
+          />
+          <p v-if="!item.status && !purchasedItems.includes(item.name)" class="cost-skill">
+            Custo: {{ item.cost }}
+          </p>
+        </button>
+      </div>
+      <button class="button-menu-secundary" @click="(menuItems = false), (menuGlobal = true)">
         Voltar
       </button>
     </div>
