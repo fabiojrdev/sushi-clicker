@@ -1,14 +1,22 @@
 <script lang="ts">
-import { defineComponent, onMounted } from 'vue'
+import { defineComponent, toRaw } from 'vue'
 
-// Exemplo de interface
-// interface Sushi {
-//   Nome: string
-//   Coins: string
-// }
+interface Skill {
+  name: string // Nome da habilidade
+  interval: number // Intervalo de tempo para aplicar a habilidade
+  value: number // Valor que a habilidade adiciona ao countTotal
+  cost: number // Custo da habilidade
+  status: boolean // Status se a habilidade está ativa ou não
+  intervalId: number // ID do intervalo para controle (opcional)
+}
+
+interface CountUpMessage {
+  skillName: string
+  value: number
+  id: string // Adicione o id como uma string
+}
 
 export default defineComponent({
-  components: {},
   data() {
     return {
       startGame: false,
@@ -21,19 +29,23 @@ export default defineComponent({
       clickBonus: 0,
       clickValue: 1,
       isScaled: false,
-      hashiSkill: false,
-      hashiInterval: 1,
-      hashiSkillValue: 1,
       showCountUp: false,
       countUpValue: 0,
       countUpInterval: 127,
-      shoyuSkill: false,
-      shoyuInterval: 1,
-      shoyuSkillValue: 10,
       resetTotal: 0,
       resetMax: 1000,
       resetModal: false,
-      sushiReset: 1000000
+      sushiReset: 10,
+      purchasedSkills: [] as string[],
+      skills: [
+        { name: 'Hashi', interval: 1, value: 1, cost: 50, status: false, intervalId: 1 },
+        { name: 'Shoyu', interval: 1, value: 10, cost: 150, status: false, intervalId: 2 },
+        { name: 'Ramen', interval: 1, value: 100, cost: 500, status: false, intervalId: 3 },
+        { name: 'Salada', interval: 1, value: 500, cost: 5000, status: false, intervalId: 4 },
+        { name: 'Temaki', interval: 1, value: 1000, cost: 100000, status: false, intervalId: 5 },
+        { name: 'Shimeji', interval: 1, value: 2000, cost: 500000, status: false, intervalId: 6 }
+      ] as Skill[],
+      countUpMessages: [] as { skillName: string; value: number; id: number }[]
     }
   },
 
@@ -41,97 +53,130 @@ export default defineComponent({
     async resetSushis() {
       if (this.countTotal < this.sushiReset) {
         alert(
-          "Você não tem sushi's suficientes para resetar você ainda precisa de " +
-            (this.sushiReset - this.countTotal) +
-            " sushi's para renascer como um verdadeiro Sushi Man"
+          `Você não tem sushi's suficientes para resetar, você ainda precisa de ${
+            this.sushiReset - this.countTotal
+          } sushi's para renascer como um verdadeiro Sushi Man`
         )
         return
       }
-      const resetValue = (this.resetTotal++).toString()
+      this.resetTotal++
+      const resetAddedTotal = this.resetTotal
+      const resetValue = this.resetTotal.toString()
       localStorage.setItem('resetTotal', resetValue)
       this.countTotal = 0
-      return
     },
+
     async clickCount() {
       if (!this.startGame) {
         const storedCount = localStorage.getItem('countTotal')
-        const resetCount = localStorage.getItem('resetTotall')
+        const resetCount = localStorage.getItem('resetTotal')
+        const storedSkills = JSON.parse(localStorage.getItem('purchasedSkills') || '[]')
         this.countTotal = parseInt(storedCount || '0', 10)
         this.resetTotal = parseInt(resetCount || '0', 10)
+        this.purchasedSkills = storedSkills
         this.startGame = true
+        return
       }
       this.isScaled = true
       this.countTotal += this.clickValue
-      await setTimeout(() => {
-        this.isScaled = false
-      }, 200)
+      await new Promise((resolve) => setTimeout(resolve, 200))
+      this.isScaled = false
       await this.countUp(true, 'click')
     },
-    async skillHashi() {
-      if (this.hashiSkill) {
-        this.hashiSkill = false
-        this.countUp(false, 'hashi')
-        clearInterval(this.hashiInterval)
-        return
+
+    handleSkill(skill: Skill) {
+      if (!this.purchasedSkills.includes(skill.name)) {
+        if (this.countTotal >= skill.cost) {
+          this.countTotal -= skill.cost
+          this.purchasedSkills.push(skill.name)
+          this.activateSkill(skill)
+        } else {
+          alert(
+            `Você precisa de mais ${skill.cost - this.countTotal} sushi(s) para adquirir ${skill.name}!`
+          )
+        }
+      } else {
+        this.toggleSkill(skill)
       }
-      this.hashiSkill = true
-      this.hashiInterval = setInterval(() => {
-        this.countUp(true, 'hashi')
-      }, 1000)
     },
-    async skillShoyu() {
-      if (this.shoyuSkill) {
-        this.shoyuSkill = false
-        this.countUp(false, 'shoyu')
-        clearInterval(this.shoyuInterval)
-        return
+
+    activateSkill(skill: Skill) {
+      skill.intervalId = window.setInterval(() => {
+        this.countTotal += skill.value
+        this.countUpMessages.push({
+          skillName: skill.name,
+          value: skill.value,
+          id: skill.intervalId
+        })
+      }, 1000)
+      skill.status = true
+    },
+
+    toggleSkill(skill: Skill) {
+      if (skill.status) {
+        clearInterval(skill.intervalId)
+        skill.status = false
+        this.countUpMessages = this.countUpMessages.filter((msg) => msg.skillName !== skill.name)
+      } else {
+        this.activateSkill(skill)
       }
-      this.shoyuSkill = true
-      this.shoyuInterval = setInterval(() => {
-        this.countUp(true, 'shoyu')
-      }, 1000)
     },
-    delay(ms: number) {
-      return new Promise((resolve) => setTimeout(resolve, ms))
-    },
-    async countUp(params: boolean, skill: string) {
-      if (params === true) {
+
+    async countUp(active: boolean, skillName: string) {
+      const arrayNull = [] as any[]
+      this.countUpMessages = arrayNull
+      if (active) {
         this.showCountUp = true
 
-        switch (skill) {
-          case 'hashi':
-            this.countTotal += this.hashiSkillValue
-            this.countUpValue = this.hashiSkillValue
-            break
-          case 'click':
-            this.countUpValue = this.clickValue
-            await this.delay(500)
-            this.showCountUp = false
-            break
-          case 'shoyu':
-            this.countTotal += this.shoyuSkillValue
-            this.countUpValue = this.shoyuSkillValue
-            break
+        if (skillName === 'click') {
+          this.countUpValue = this.clickValue
+          await new Promise((resolve) => setTimeout(resolve, 500))
+          this.showCountUp = false
+        } else {
+          const skill = this.skills.find((s) => s.name === skillName)
+          if (skill) {
+            this.countTotal += skill.value
+            this.countUpValue = skill.value
+            const message = {
+              skillName: skill.name,
+              value: skill.value,
+              id: skill.intervalId
+            }
+            this.countUpMessages.push(message)
+
+            setTimeout(() => {
+              this.countUpMessages = this.countUpMessages.filter((msg) => msg.id)
+            }, 2000)
+          }
         }
       } else {
         this.showCountUp = false
       }
     },
+
+    delay(ms: number) {
+      return new Promise((resolve) => setTimeout(resolve, ms))
+    },
+
     async resetData() {
       this.countTotal = 0
       localStorage.setItem('countTotal', '0')
       this.menuResetData = false
-      return
     }
   },
+
   watch: {
     countTotal(newValue) {
-      console.log(this.countTotal)
       const totalValueNew = newValue.toString()
-      return localStorage.setItem('countTotal', totalValueNew)
+      localStorage.setItem('countTotal', totalValueNew)
+    },
+    purchasedSkills(newSkills) {
+      console.log('purchasedSkills mudou para:', newSkills)
+      const rawSkills = toRaw(newSkills)
+      const skillData = JSON.stringify(rawSkills)
+      localStorage.setItem('purchasedSkills', skillData)
     }
-  },
-  mounted() {}
+  }
 })
 </script>
 
@@ -179,26 +224,30 @@ export default defineComponent({
       <div class="title">Magias</div>
       <span class="close-button-menu" @click="menuMagias = false">X</span>
       <div class="magias">
-        <span
-          :class="{ 'active-skill': hashiSkill, 'desactive-skill': !hashiSkill }"
+        <button
+          v-for="skill in skills"
+          :key="skill.name"
+          :class="{ 'active-skill': skill.status, 'desactive-skill': !skill.status }"
           class="skill-container"
-          @click="startGame ? skillHashi() : null"
+          @click="startGame ? handleSkill(skill) : null"
         >
-          <img class="skill-button-active" src="@/assets/hashi.png" alt="" />
-        </span>
-        <span
-          :class="{ 'active-skill': shoyuSkill, 'desactive-skill': !shoyuSkill }"
-          class="skill-container"
-          @click="startGame ? skillShoyu() : null"
-        >
-          <img class="skill-button-active" src="@/assets/shoyu.png" alt="" />
-        </span>
+          <p class="title-skill">{{ skill.name }}<br />(+{{ skill.value }})</p>
+          <img
+            :src="`@/assets/${skill.name.toLowerCase()}.png`"
+            class="skill-button-active"
+            alt=""
+          />
+          <p v-if="!skill.status && !purchasedSkills.includes(skill.name)" class="cost-skill">
+            Custo: {{ skill.cost }}
+          </p>
+        </button>
       </div>
       <button class="button-menu-secundary" @click="(menuMagias = false), (menuGlobal = true)">
         Voltar
       </button>
     </div>
   </div>
+
   <img
     v-if="!startGame"
     :class="{ 'click-effect-normal': isScaled }"
@@ -213,31 +262,50 @@ export default defineComponent({
     <div class="score-bar">
       <p class="title-count">Sushi's:</p>
       <span class="value-count">
+        <img
+          style="
+            height: 20px;
+            width: 20px;
+            display: flex;
+            position: absolute;
+            margin-top: 1px;
+            margin-left: 8px;
+          "
+          src="@/assets/sushi.png"
+          alt=""
+        />
         <h1 class="score-count">{{ countTotal }}</h1>
       </span>
+      <p class="title-reset">Você renasceu:</p>
+      <div v-for="index in resetTotal" :key="index.valueOf" class="resets">
+        <img class="reset-star" src="@/assets/reset-start-full.png" alt="" />
+      </div>
       <button class="button-menu-config" @click="menuConfig = !menuConfig"></button>
       <button class="button-menu" @click="menuGlobal = !menuGlobal"></button>
     </div>
     <div class="container-app">
       <div class="app">
+        <!-- Mostrar mensagens de contagem -->
+        <p class="add-click">+{{ countUpValue }}</p>
+
+        <!-- Área para exibir as habilidades ativas -->
+        <div class="skills-container">
+          <!-- <img
+            v-for="skill in skills"
+            :key="skill.name"
+            class="rotating-image"
+            :class="{ bounce: skill.name === 'Hashi' }"
+            :src="`@/assets/${skill.name.toLowerCase()}.png`"
+            :alt="skill.name"
+          /> -->
+        </div>
+
+        <!-- O <span> principal do jogo -->
         <span
           class="sushi-button"
           :class="{ 'click-effect-normal': isScaled }"
           @click="startGame ? clickCount() : null"
         >
-          <p v-if="showCountUp" class="add-click">+{{ countUpValue }}</p>
-          <img
-            v-if="hashiSkill"
-            class="rotating-image bounce skill-button-active"
-            src="@/assets/hashi.png"
-            alt=""
-          />
-          <img
-            v-if="shoyuSkill"
-            class="rotating-image skill-button-active"
-            src="@/assets/shoyu.png"
-            alt=""
-          />
           <img class="sushi-image" src="@/assets/sushi.png" alt="" />
         </span>
       </div>
@@ -246,6 +314,34 @@ export default defineComponent({
 </template>
 
 <style scoped>
+.resets {
+  top: 0%;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+.resets img {
+  width: 40px;
+  height: 40px;
+}
+.title-reset {
+  top: 2%;
+  font-size: 10px;
+  color: white;
+  position: absolute;
+}
+.title-skill {
+  margin-bottom: 70px;
+  font-size: 10px;
+  color: white;
+  position: absolute;
+}
+.cost-skill {
+  margin-top: 70px;
+  font-size: 10px;
+  color: white;
+  position: absolute;
+}
 .container-modal {
   display: flex;
   justify-content: center;
@@ -318,7 +414,11 @@ export default defineComponent({
   font-size: 22px;
   color: white;
   text-transform: uppercase;
-  padding-bottom: 20px;
+  margin-top: -80px;
+  padding-bottom: 75px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-color: transparent;
 }
 .menu-modal .close-button-menu {
   position: absolute;
@@ -328,8 +428,9 @@ export default defineComponent({
   color: rgb(255, 0, 0);
 }
 .magias {
-  display: flex;
-  padding-top: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  padding-top: 0px;
   gap: 10px;
 }
 .logo-game {
@@ -447,7 +548,7 @@ export default defineComponent({
   background-color: transparent;
 }
 .score-count {
-  padding-left: 10px;
+  padding-left: 30px;
   color: white;
   font-size: 16px;
 }
@@ -471,21 +572,27 @@ export default defineComponent({
   transform: scale(1.25);
 }
 .skill-container {
-  width: 30px;
-  height: auto;
+  width: 50px;
+  height: 50px;
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 5px;
   border-radius: 5px;
+  margin-bottom: 25px;
+  border: none;
 }
 .active-skill {
-  background-color: rgb(58, 183, 49);
-  border: 2px solid rgb(58, 183, 49);
+  background-image: url('@/assets/skill-on.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-color: transparent;
 }
 .desactive-skill {
-  background-color: rgb(255, 187, 0);
-  border: 2px solid rgb(162, 129, 35);
+  background-image: url('@/assets/skill-off.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-color: transparent;
 }
 .skill-button-active {
   width: 30px;
