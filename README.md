@@ -1,6 +1,6 @@
-# sushi-clicker
+# Sushi Clicker - Clicker game browser
 
-This template should help get you started developing with Vue 3 in Vite.
+A game simply made out of nothing, for no reason.
 
 ## Recommended IDE Setup
 
