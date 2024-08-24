@@ -2,14 +2,9 @@
 import { defineComponent, onMounted } from 'vue'
 
 // Exemplo de interface
-// interface Jazigo {
-//   NomeFalecido: string
-//   DataNascimento: string
-//   DataFalecimento: string
-//   BranchName: string
-//   Lote: string
-//   Quadra: string
-//   Setor: string
+// interface Sushi {
+//   Nome: string
+//   Coins: string
 // }
 
 export default defineComponent({
@@ -17,6 +12,10 @@ export default defineComponent({
   data() {
     return {
       startGame: false,
+      menuGlobal: false,
+      menuConfig: false,
+      menuMagias: false,
+      menuResetData: false,
       countTotal: 0,
       countTotalSaved: '',
       clickBonus: 0,
@@ -97,6 +96,12 @@ export default defineComponent({
       } else {
         this.showCountUp = false
       }
+    },
+    async resetData() {
+      this.countTotal = 0
+      localStorage.setItem('countTotal', '0')
+      this.menuResetData = false
+      return
     }
   },
   watch: {
@@ -115,6 +120,63 @@ export default defineComponent({
   <div class="logo-game">
     <img class="skill-button-active" src="@/assets/logo.png" alt="" />
   </div>
+
+  <div v-if="menuGlobal" class="container-modal">
+    <div class="menu-modal">
+      <div class="title">Menu</div>
+      <span class="close-button-menu" @click="menuGlobal = false">X</span>
+      <button class="button-menu-secundary" @click="(menuMagias = true), (menuGlobal = false)">
+        Magias
+      </button>
+    </div>
+  </div>
+
+  <div v-if="menuResetData" class="container-modal">
+    <div class="menu-modal">
+      <div class="title">Você tem certeza que gostaria de deletar todos os dados?</div>
+      <span class="close-button-menu" @click="menuResetData = false">X</span>
+      <div class="confirm-buttons">
+        <button class="button-menu-secundary" @click="menuResetData = false">Não</button>
+        <button class="button-menu-secundary" @click="resetData()">Sim</button>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="menuConfig" class="container-modal">
+    <div class="menu-modal">
+      <div class="title">Config</div>
+      <span class="close-button-menu" @click="menuConfig = false">X</span>
+      <button class="button-menu-secundary" @click="(menuResetData = true), (menuConfig = false)">
+        Resetar dados
+      </button>
+    </div>
+  </div>
+
+  <div v-if="menuMagias" class="container-modal">
+    <div class="menu-modal">
+      <div class="title">Magias</div>
+      <span class="close-button-menu" @click="menuMagias = false">X</span>
+      <div class="magias">
+        <span
+          :class="{ 'active-skill': hashiSkill, 'desactive-skill': !hashiSkill }"
+          class="skill-container"
+          @click="startGame ? skillHashi() : null"
+        >
+          <img class="skill-button-active" src="@/assets/hashi.png" alt="" />
+        </span>
+        <span
+          :class="{ 'active-skill': shoyuSkill, 'desactive-skill': !shoyuSkill }"
+          class="skill-container"
+          @click="startGame ? skillShoyu() : null"
+        >
+          <img class="skill-button-active" src="@/assets/shoyu.png" alt="" />
+        </span>
+      </div>
+      <button class="button-menu-secundary" @click="(menuMagias = false), (menuGlobal = true)">
+        Voltar
+      </button>
+    </div>
+  </div>
   <img
     v-if="!startGame"
     :class="{ 'click-effect-normal': isScaled }"
@@ -127,21 +189,12 @@ export default defineComponent({
   <div v-if="startGame" class="game">
     <div class="notification"></div>
     <div class="score-bar">
-      <h1 class="score-count">Sushis: {{ countTotal }}</h1>
-      <span
-        :class="{ 'active-skill': hashiSkill, 'desactive-skill': !hashiSkill }"
-        class="skill-container"
-        @click="startGame ? skillHashi() : null"
-      >
-        <img class="skill-button-active" src="@/assets/hashi.png" alt="" />
+      <p class="title-count">Sushi's:</p>
+      <span class="value-count">
+        <h1 class="score-count">{{ countTotal }}</h1>
       </span>
-      <span
-        :class="{ 'active-skill': shoyuSkill, 'desactive-skill': !shoyuSkill }"
-        class="skill-container"
-        @click="startGame ? skillShoyu() : null"
-      >
-        <img class="skill-button-active" src="@/assets/shoyu.png" alt="" />
-      </span>
+      <button class="button-menu-config" @click="menuConfig = !menuConfig"></button>
+      <button class="button-menu" @click="menuGlobal = !menuGlobal"></button>
     </div>
     <div class="container-app">
       <div class="app">
@@ -166,6 +219,95 @@ export default defineComponent({
 </template>
 
 <style scoped>
+.container-modal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* background-color: rgba(0, 0, 0, 0.5); */
+  z-index: 999;
+  /* pointer-events: none; */
+}
+.button-menu-config {
+  right: 20%;
+  position: absolute;
+  background-image: url('@/assets/config-menu.png');
+  background-size: contain;
+  background-color: transparent;
+  width: 45px;
+  height: 45px;
+  font-size: 22px;
+  text-transform: uppercase;
+  color: white;
+  border: none;
+  background-repeat: no-repeat;
+}
+.button-menu-secundary {
+  background-image: url('@/assets/button-menu.png');
+  background-size: contain;
+  background-color: transparent;
+  padding: 5px;
+  width: 137px;
+  height: 50px;
+  font-size: 18px;
+  font-weight: bolder;
+  text-transform: uppercase;
+  color: rgb(121, 60, 14);
+  border: none;
+  background-repeat: no-repeat;
+}
+.button-menu {
+  right: 5%;
+  position: absolute;
+  background-image: url('@/assets/menu-global.png');
+  background-size: contain;
+  background-color: transparent;
+  width: 45px;
+  height: 45px;
+  font-size: 22px;
+  text-transform: uppercase;
+  color: white;
+  background-repeat: no-repeat;
+  border: none;
+}
+.menu-modal {
+  flex-direction: column;
+  display: flex;
+  /* justify-content: center; */
+  align-items: center;
+  max-width: 500px;
+  min-width: 325px;
+  max-height: 500px;
+  min-height: 300px;
+  padding: 20px;
+  border-radius: 15px;
+  background-image: url('@/assets/menu-background.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-color: transparent;
+}
+.menu-modal .title {
+  font-size: 22px;
+  color: white;
+  text-transform: uppercase;
+  padding-bottom: 20px;
+}
+.menu-modal .close-button-menu {
+  position: absolute;
+  right: 3%;
+  top: 3%;
+  font-size: 22px;
+  color: rgb(255, 0, 0);
+}
+.magias {
+  display: flex;
+  padding-top: 20px;
+  gap: 10px;
+}
 .logo-game {
   position: absolute;
   display: flex;
@@ -258,18 +400,34 @@ export default defineComponent({
   display: grid;
   align-items: center;
   width: 100vw;
-  padding: 10px;
+  padding: 20px;
   background-color: rgba(0, 0, 0, 0.593);
   z-index: 999;
   bottom: 0%;
   left: 0%;
   grid-template-columns: 1fr 1fr 1fr;
 }
-.score-count {
-  padding-left: 5px;
-  font-weight: 1000;
-  color: rgb(255, 217, 0);
+.title-count {
+  top: 5%;
+  left: 5%;
+  position: absolute;
+  font-size: 10px;
+  color: white;
 }
+.value-count {
+  width: 100%;
+  height: 30px;
+  background-image: url('@/assets/count-value.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-color: transparent;
+}
+.score-count {
+  padding-left: 10px;
+  color: white;
+  font-size: 16px;
+}
+
 .container-app {
   display: flex;
   justify-content: center;
