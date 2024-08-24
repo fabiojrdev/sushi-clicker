@@ -29,15 +29,35 @@ export default defineComponent({
       countUpInterval: 127,
       shoyuSkill: false,
       shoyuInterval: 1,
-      shoyuSkillValue: 10
+      shoyuSkillValue: 10,
+      resetTotal: 0,
+      resetMax: 1000,
+      resetModal: false,
+      sushiReset: 1000000
     }
   },
 
   methods: {
+    async resetSushis() {
+      if (this.countTotal < this.sushiReset) {
+        alert(
+          "Você não tem sushi's suficientes para resetar você ainda precisa de " +
+            (this.sushiReset - this.countTotal) +
+            " sushi's para renascer como um verdadeiro Sushi Man"
+        )
+        return
+      }
+      const resetValue = (this.resetTotal++).toString()
+      localStorage.setItem('resetTotal', resetValue)
+      this.countTotal = 0
+      return
+    },
     async clickCount() {
       if (!this.startGame) {
         const storedCount = localStorage.getItem('countTotal')
+        const resetCount = localStorage.getItem('resetTotall')
         this.countTotal = parseInt(storedCount || '0', 10)
+        this.resetTotal = parseInt(resetCount || '0', 10)
         this.startGame = true
       }
       this.isScaled = true
@@ -108,7 +128,6 @@ export default defineComponent({
     countTotal(newValue) {
       console.log(this.countTotal)
       const totalValueNew = newValue.toString()
-      console.log('Salvou')
       return localStorage.setItem('countTotal', totalValueNew)
     }
   },
@@ -146,6 +165,9 @@ export default defineComponent({
     <div class="menu-modal">
       <div class="title">Config</div>
       <span class="close-button-menu" @click="menuConfig = false">X</span>
+      <button class="button-menu-secundary" @click="resetSushis(), (menuConfig = false)">
+        Renascer
+      </button>
       <button class="button-menu-secundary" @click="(menuResetData = true), (menuConfig = false)">
         Resetar dados
       </button>
@@ -210,12 +232,17 @@ export default defineComponent({
             src="@/assets/hashi.png"
             alt=""
           />
+          <img
+            v-if="shoyuSkill"
+            class="rotating-image skill-button-active"
+            src="@/assets/shoyu.png"
+            alt=""
+          />
           <img class="sushi-image" src="@/assets/sushi.png" alt="" />
         </span>
       </div>
     </div>
   </div>
-  <!-- <RouterView /> -->
 </template>
 
 <style scoped>
@@ -228,9 +255,7 @@ export default defineComponent({
   left: 0;
   width: 100%;
   height: 100%;
-  /* background-color: rgba(0, 0, 0, 0.5); */
   z-index: 999;
-  /* pointer-events: none; */
 }
 .button-menu-config {
   right: 20%;
@@ -277,7 +302,6 @@ export default defineComponent({
 .menu-modal {
   flex-direction: column;
   display: flex;
-  /* justify-content: center; */
   align-items: center;
   max-width: 500px;
   min-width: 325px;
@@ -354,8 +378,8 @@ export default defineComponent({
 }
 .rotating-image {
   position: absolute;
-  width: 60px;
-  height: 60px;
+  width: 40px;
+  height: 40px;
   top: 48%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -363,10 +387,10 @@ export default defineComponent({
 }
 @keyframes rotate {
   from {
-    transform: rotate(0deg) translateX(250px) rotate(0deg);
+    transform: rotate(0deg) translateX(90px) rotate(0deg);
   }
   to {
-    transform: rotate(360deg) translateX(600px) rotate(-360deg);
+    transform: rotate(360deg) translateX(90px) rotate(-360deg);
   }
 }
 .bounce {
