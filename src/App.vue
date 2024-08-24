@@ -45,7 +45,7 @@ export default defineComponent({
       this.countTotal += this.clickValue
       await setTimeout(() => {
         this.isScaled = false
-      }, 100)
+      }, 200)
       await this.countUp(true, 'click')
     },
     async skillHashi() {
@@ -107,62 +107,103 @@ export default defineComponent({
       return localStorage.setItem('countTotal', totalValueNew)
     }
   },
-  mounted() {
-    console.log('INCIEI O JOGO')
-    // const storedCount = localStorage.getItem('countTotal')
-    // this.countTotal = parseInt(storedCount || '0', 10)
-    console.log('valor', this.countTotal)
-  }
+  mounted() {}
 })
 </script>
 
 <template>
-  <div class="notification"></div>
-  <div class="score-bar">
-    <h1 class="score-count">Sushis: {{ countTotal }}</h1>
-    <span
-      :class="{ 'active-skill': hashiSkill, 'desactive-skill': !hashiSkill }"
-      class="skill-container"
-      @click="startGame ? skillHashi() : null"
-    >
-      <img class="skill-button-active" src="@/assets/hashi.png" alt="" />
-    </span>
-    <span
-      :class="{ 'active-skill': shoyuSkill, 'desactive-skill': !shoyuSkill }"
-      class="skill-container"
-      @click="startGame ? skillShoyu() : null"
-    >
-      <img class="skill-button-active" src="@/assets/shoyu.png" alt="" />
-    </span>
+  <div class="logo-game">
+    <img class="skill-button-active" src="@/assets/logo.png" alt="" />
   </div>
-  <div class="container-app">
-    <div class="app">
-      <span class="sushi-button" :class="{ 'click-effect-normal': isScaled }" @click="clickCount()">
-        <p v-if="showCountUp" class="add-click">+{{ countUpValue }}</p>
-        <img
-          v-if="hashiSkill"
-          class="rotating-image bounce skill-button-active"
-          src="@/assets/hashi.png"
-          alt=""
-        />
-        <img class="sushi-image" src="@/assets/sushi.png" alt="" />
+  <img
+    v-if="!startGame"
+    :class="{ 'click-effect-normal': isScaled }"
+    @click="!startGame ? clickCount() : null"
+    class="start-screen"
+    src="@/assets/start-screen.jpg"
+    alt=""
+  />
+  <p v-if="!startGame" class="start-text">Clique para iniciar o jogo</p>
+  <div v-if="startGame" class="game">
+    <div class="notification"></div>
+    <div class="score-bar">
+      <h1 class="score-count">Sushis: {{ countTotal }}</h1>
+      <span
+        :class="{ 'active-skill': hashiSkill, 'desactive-skill': !hashiSkill }"
+        class="skill-container"
+        @click="startGame ? skillHashi() : null"
+      >
+        <img class="skill-button-active" src="@/assets/hashi.png" alt="" />
+      </span>
+      <span
+        :class="{ 'active-skill': shoyuSkill, 'desactive-skill': !shoyuSkill }"
+        class="skill-container"
+        @click="startGame ? skillShoyu() : null"
+      >
+        <img class="skill-button-active" src="@/assets/shoyu.png" alt="" />
       </span>
     </div>
-    <p v-if="!startGame" class="start-text">Clique para iniciar o jogo</p>
+    <div class="container-app">
+      <div class="app">
+        <span
+          class="sushi-button"
+          :class="{ 'click-effect-normal': isScaled }"
+          @click="startGame ? clickCount() : null"
+        >
+          <p v-if="showCountUp" class="add-click">+{{ countUpValue }}</p>
+          <img
+            v-if="hashiSkill"
+            class="rotating-image bounce skill-button-active"
+            src="@/assets/hashi.png"
+            alt=""
+          />
+          <img class="sushi-image" src="@/assets/sushi.png" alt="" />
+        </span>
+      </div>
+    </div>
   </div>
-
   <!-- <RouterView /> -->
 </template>
 
 <style scoped>
+.logo-game {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  top: 10%;
+}
+.logo-game img {
+  max-width: 600px;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  left: 0%;
+}
+.start-screen {
+  position: absolute;
+  top: 0%;
+  left: 0%;
+  justify-content: center;
+  align-items: center;
+  max-width: 100vw;
+  min-width: auto;
+  min-height: auto;
+  z-index: 99999;
+  display: flex;
+  overflow: hidden;
+}
 .start-text {
-  top: 60%;
+  top: 80%;
   position: absolute;
   justify-content: center;
   align-items: center;
   font-size: 22px;
   color: white;
   text-transform: uppercase;
+  z-index: 999999;
+  pointer-events: none;
 }
 .add-click {
   color: gold;
@@ -171,19 +212,19 @@ export default defineComponent({
 }
 .rotating-image {
   position: absolute;
-  width: 60px; /* Largura da imagem */
-  height: 60px; /* Altura da imagem */
-  top: 48%; /* Para centralizar verticalmente */
-  left: 50%; /* Para centralizar horizontalmente */
-  transform: translate(-50%, -50%); /* Para ajustar o centro da imagem */
-  animation: rotate 10s linear infinite; /* Animação de rotação */
+  width: 60px;
+  height: 60px;
+  top: 48%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: rotate 10s linear infinite;
 }
 @keyframes rotate {
   from {
-    transform: rotate(0deg) translateX(250px) rotate(0deg); /* Inicialmente */
+    transform: rotate(0deg) translateX(250px) rotate(0deg);
   }
   to {
-    transform: rotate(360deg) translateX(600px) rotate(-360deg); /* Finaliza a rotação */
+    transform: rotate(360deg) translateX(600px) rotate(-360deg);
   }
 }
 .bounce {
@@ -220,7 +261,7 @@ export default defineComponent({
   padding: 10px;
   background-color: rgba(0, 0, 0, 0.593);
   z-index: 999;
-  top: 0%;
+  bottom: 0%;
   left: 0%;
   grid-template-columns: 1fr 1fr 1fr;
 }
@@ -241,11 +282,11 @@ export default defineComponent({
   background-color: transparent;
 }
 .sushi-image {
-  width: 100px;
+  width: 150px;
   height: auto;
 }
 .click-effect-normal .sushi-image {
-  transform: scale(1.5);
+  transform: scale(1.25);
 }
 .skill-container {
   width: 30px;
