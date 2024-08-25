@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, toRaw } from 'vue'
+import { defineComponent, toRaw, ref } from 'vue'
 
 interface Skill {
   name: string // Nome da habilidade
@@ -29,8 +29,10 @@ export default defineComponent({
   data() {
     return {
       startGame: false,
+      isPlaying: false,
       menuGlobal: false,
       menuConfig: false,
+      menuMusic: false,
       menuMagias: false,
       menuItems: false,
       menuResetData: false,
@@ -45,7 +47,7 @@ export default defineComponent({
       resetTotal: 0,
       resetMax: 1000,
       resetModal: false,
-      sushiReset: 10,
+      sushiReset: 500000000,
       purchasedItems: [] as string[],
       purchasedSkills: [] as string[],
       items: [
@@ -100,6 +102,19 @@ export default defineComponent({
   },
 
   methods: {
+    toggleAudio() {
+      const audio = this.$refs.audioElement as HTMLAudioElement | null
+
+      if (audio) {
+        if (this.isPlaying) {
+          audio.pause()
+        } else {
+          audio.play()
+        }
+        this.isPlaying = !this.isPlaying
+      }
+    },
+
     async resetSushis() {
       if (this.countTotal < this.sushiReset) {
         alert(
@@ -245,11 +260,12 @@ export default defineComponent({
 
     async resetData() {
       this.countTotal = 0
+      this.resetTotal = 0
       localStorage.setItem('countTotal', '0')
+      localStorage.setItem('resetTotal', '0')
       this.menuResetData = false
     }
   },
-
   watch: {
     countTotal(newValue) {
       const totalValueNew = newValue.toString()
@@ -268,6 +284,10 @@ export default defineComponent({
 <template>
   <div class="logo-game">
     <img class="skill-button-active" src="@/assets/logo.png" alt="" />
+    <audio autoplay loop controls class="audio">
+      <source ref="audioElement" src="@/assets/music-theme.mp3" type="audio/mpeg" />
+      Seu navegador não suporta o elemento de áudio.
+    </audio>
   </div>
 
   <div v-if="menuGlobal" class="container-modal">
@@ -393,17 +413,23 @@ export default defineComponent({
         />
         <h1 class="score-count">{{ countTotal }}</h1>
       </span>
-      <p class="title-reset">Você renasceu:</p>
-      <div v-for="index in resetTotal" :key="index.valueOf" class="resets">
-        <img class="reset-star" src="@/assets/reset-start-full.png" alt="" />
+      <div class="resets">
+        <p class="title-reset">Você renasceu:</p>
+        <img v-show="resetTotal == 0" class="reset-star" src="@/assets/0-rr.png" alt="" />
+        <img v-show="resetTotal == 1" class="reset-star" src="@/assets/1-rr.png" alt="" />
+        <img v-show="resetTotal == 2" class="reset-star" src="@/assets/2-rr.png" alt="" />
+        <img v-show="resetTotal == 3" class="reset-star" src="@/assets/3-rr.png" alt="" />
+        <img v-show="resetTotal == 4" class="reset-star" src="@/assets/4-rr.png" alt="" />
+        <img v-show="resetTotal == 5" class="reset-star" src="@/assets/5-rr.png" alt="" />
       </div>
+      <button class="button-menu-config" @click="toggleAudio"></button>
       <button class="button-menu-config" @click="menuConfig = !menuConfig"></button>
       <button class="button-menu" @click="menuGlobal = !menuGlobal"></button>
     </div>
     <div class="container-app">
       <div class="app">
         <!-- Mostrar mensagens de contagem -->
-        <p class="add-click">+{{ countUpValue }}</p>
+        <p v-if="showCountUp" class="add-click">+{{ countUpValue }}</p>
 
         <!-- Área para exibir as habilidades ativas -->
         <div class="skills-container">
@@ -417,7 +443,7 @@ export default defineComponent({
           /> -->
         </div>
 
-        <!-- O <span> principal do jogo -->
+        <!-- O principal do jogo -->
         <span
           class="sushi-button"
           :class="{ 'click-effect-normal': isScaled }"
@@ -431,6 +457,9 @@ export default defineComponent({
 </template>
 
 <style scoped>
+.audio {
+  visibility: hidden;
+}
 .resets {
   top: 0%;
   display: inline-flex;
@@ -438,8 +467,15 @@ export default defineComponent({
   align-items: center;
 }
 .resets img {
-  width: 40px;
-  height: 40px;
+  width: 350px;
+  height: auto;
+}
+
+@media screen and (max-width: 1080px) {
+  .resets img {
+    width: 100px;
+    height: auto;
+  }
 }
 .title-reset {
   top: 2%;
@@ -553,6 +589,7 @@ export default defineComponent({
 .logo-game {
   position: absolute;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 10px;

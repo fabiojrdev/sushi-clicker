@@ -3,7 +3,7 @@
 # 🍣 Sushi Clicker - Clicker game browser 🍣
 
 - A game simply made out of nothing, for no reason.
-- version 1.0.4
+- version 1.0.5
 - running in browser, more updates in future.
 
 ## How to play demo
