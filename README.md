@@ -8,7 +8,7 @@
 
 ## How to play demo
 
-- demo running in https://fabintech.shop
+- demo running in https://botza.com.br
 
 ## Installation
 
